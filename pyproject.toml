@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lastkv"
+version = "0.1.0"
+description = "LastKV inference for language, video, and novel-view synthesis"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT AND Apache-2.0"
+license-files = ["LICENSE", "LICENSES/*", "THIRD_PARTY_NOTICES.md"]
+authors = [{name = "LastKV contributors"}]
+dependencies = ["torch>=2.5", "huggingface-hub>=0.34,<1", "safetensors>=0.4"]
+
+[project.optional-dependencies]
+llm = ["transformers==4.57.6"]
+wan = [
+  "transformers==4.57.6",
+  "diffusers>=0.31,<0.37",
+  "einops>=0.7",
+  "ftfy",
+  "regex",
+  "imageio>=2.31",
+  "imageio-ffmpeg",
+  "tqdm",
+]
+nvs = ["numpy", "Pillow"]
+dev = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://zefan-cai.github.io/LastKV.github.io/"
+Repository = "https://github.com/Zefan-Cai/LastKV"
+Models = "https://huggingface.co/collections/ZefanCai/lastkv"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
