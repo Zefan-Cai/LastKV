@@ -34,10 +34,9 @@ Repository = "https://github.com/Zefan-Cai/LastKV"
 Models = "https://huggingface.co/collections/ZefanCai/lastkv"
 
 [tool.setuptools]
-packages = ["lastkv", "lastkv.llm", "lastkv.nvs", "lastkv.videogen"]
+packages = ["lastkv.llm", "lastkv.nvs", "lastkv.videogen"]
 
 [tool.setuptools.package-dir]
-lastkv = "src/lastkv"
 "lastkv.llm" = "llm/src/lastkv/llm"
 "lastkv.nvs" = "nvs/src/lastkv/nvs"
 "lastkv.videogen" = "videogen/src/lastkv/videogen"
