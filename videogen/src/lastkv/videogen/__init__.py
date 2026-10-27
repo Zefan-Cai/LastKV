@@ -1,4 +1,4 @@
-"""LastKV Wan causal text-to-video inference (optional dependencies loaded lazily)."""
+"""LastKV video generation with the Wan architecture (optional dependencies loaded lazily)."""
 
 __all__ = ["AKV2541ReuseKVCausalWanModel", "LastKVWanPipeline"]
 

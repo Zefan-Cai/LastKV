@@ -23,8 +23,8 @@ def main():
     parser.add_argument("--device", default="cuda")
     args = parser.parse_args()
 
-    from lastkv.wan import LastKVWanPipeline
-    from lastkv.wan.pipeline import save_video
+    from lastkv.videogen import LastKVWanPipeline
+    from lastkv.videogen.pipeline import save_video
 
     pipeline = LastKVWanPipeline.from_pretrained(
         args.model, revision=args.revision, base_model=args.base_model, device=args.device)

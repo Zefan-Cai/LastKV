@@ -6,7 +6,7 @@ names. Install the repository's LLM dependencies, including **Transformers
 4.57.6** and its compatible `huggingface-hub<1` dependency.
 
 ```bash
-python examples/llm_generate.py --device cuda --dtype bfloat16 \
+python llm/examples/generate.py --device cuda --dtype bfloat16 \
   --prompt "The key to understanding the universe is" --max-new-tokens 64
 ```
 

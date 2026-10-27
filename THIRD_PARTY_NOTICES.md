@@ -5,7 +5,7 @@ The following components retain their original licenses and copyright notices.
 
 ## Language model
 
-`src/lastkv/llm/` packages the LastKV recurrent Marin implementation from
+`llm/src/lastkv/llm/` packages the LastKV recurrent Marin implementation from
 `Zefan-Cai/llm`, using the 8K source revision
 `3d914d3217c2f3ea1513852e621c146099ece394` and the 256K source revision
 `580a6c2a46b68a0312d5e7df8ae1d30f8734c812`.
@@ -18,7 +18,7 @@ from Hugging Face Transformers, which is distributed under Apache-2.0.
 
 ## Wan video model
 
-The Wan-derived files in `src/lastkv/wan/` retain Apache-2.0:
+The Wan-derived files in `videogen/src/lastkv/videogen/` retain Apache-2.0:
 `attention.py`, `layers.py`, `model.py`, `pipeline.py`, `scheduler.py`, `t5.py`,
 `tokenizers.py`, and `vae.py`.
 
@@ -34,10 +34,10 @@ package entry point are LastKV-owned MIT code.
 
 ## Novel-view synthesis
 
-`src/lastkv/nvs/` is an inference-only port of the LastKV research implementation
+`nvs/src/lastkv/nvs/` is an inference-only port of the LastKV research implementation
 in `Zefan-Cai/ttt_lvsm`, with camera preprocessing and rendering examples. It is
 released under the repository's MIT license. Checkpoint compatibility and source
-configuration evidence are described in [docs/nvs.md](docs/nvs.md).
+configuration evidence are described in [nvs/README.md](nvs/README.md).
 
 ## Dependencies and model assets
 

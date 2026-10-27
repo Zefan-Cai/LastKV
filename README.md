@@ -15,28 +15,34 @@ Then install the model families you need:
 ```bash
 git clone https://github.com/Zefan-Cai/LastKV.git
 cd LastKV
-pip install -e '.[llm,wan,nvs]'
+pip install -e '.[llm,videogen,nvs]'
 ```
 
 The implementations use PyTorch scaled-dot-product attention. A separate
 FlashAttention installation is not required. Full Wan video generation uses CUDA;
 LLM and NVS also support CPU inference.
 
+## Repository layout
+
+Each domain is self-contained in its root folder: `llm/`, `nvs/`, and
+`videogen/`. Each folder contains the implementation, a `README.md`, examples,
+and tests.
+
 ## Language models
 
 ```bash
-python examples/llm_generate.py --model ZefanCai/LastKV-LLM-8B-Base \
+python llm/examples/generate.py --model ZefanCai/LastKV-LLM-8B-Base \
   --prompt "Explain why sharing a KV cache can save memory."
 ```
 
 `main` contains the 8K pretraining checkpoint at step 59,904. Select
 `--revision 256k-step-001209` for the subsequent 256K long-context checkpoint.
-See [language inference](docs/llm.md) for device, dtype, and cache options.
+See [language inference](llm/README.md) for device, dtype, and cache options.
 
 ## Video generation
 
 ```bash
-python examples/wan_generate.py --model ZefanCai/LastKV-Wan-1.3B \
+python videogen/examples/generate.py --model ZefanCai/LastKV-Wan-1.3B \
   --prompt "A red paper boat floating on calm water in warm sunlight." \
   --output outputs/wan-1.3b.mp4
 ```
@@ -45,27 +51,27 @@ Use `ZefanCai/LastKV-Wan-14B` for the larger model. Both default to EMA weights;
 raw weights are available as `step-020500-raw` and `step-010000-raw`, respectively.
 The loader supports the published single-file and sharded checkpoints and obtains
 the separate Wan2.1 text encoder, tokenizer, and VAE assets automatically.
-See [video inference](docs/wan.md) for memory use and shorter smoke examples.
+See [video inference](videogen/README.md) for memory use and shorter smoke examples.
 
 ## Novel-view synthesis
 
 Create a small procedural camera/image example, then render its target views:
 
 ```bash
-python examples/nvs_demo/make_demo.py --domain dl3dv --output outputs/nvs-demo
-python examples/nvs_render.py --domain dl3dv \
+python nvs/examples/make_demo.py --domain dl3dv --output outputs/nvs-demo
+python nvs/examples/render.py --domain dl3dv \
   --manifest outputs/nvs-demo/scene.json --output outputs/nvs-render
 ```
 
 The DL3DV checkpoint renders at 512 × 512; use `--domain objaverse` in both
 commands for the 1024 × 1024 checkpoint. Input manifests contain context RGB
 images, pixel-unit intrinsics, and OpenCV camera-to-world matrices; target RGB
-images are not needed. See [NVS inference](docs/nvs.md) for the input contract.
+images are not needed. See [NVS inference](nvs/README.md) for the input contract.
 
 ## Validation
 
 ```bash
-pip install -e '.[llm,wan,nvs,dev]'
+pip install -e '.[llm,videogen,nvs,dev]'
 pytest -q
 ```
 

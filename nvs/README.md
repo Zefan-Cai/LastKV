@@ -14,7 +14,7 @@ Each original `model.pt` contains 196 model tensors plus optimizer/training stat
 Install the repository dependencies, then supply a scene manifest:
 
 ```bash
-python examples/nvs_render.py --domain dl3dv --manifest /path/to/scene.json --output outputs/scene
+python nvs/examples/render.py --domain dl3dv --manifest /path/to/scene.json --output outputs/scene
 ```
 
 The checkpoint downloads from Hugging Face. Use `--checkpoint /path/to/model.pt` for a local copy. CUDA BF16 is the default; attention uses PyTorch scaled dot-product attention. CPU `--device cpu --dtype float32` is supported for debugging but full-resolution rendering is expensive.
@@ -22,8 +22,8 @@ The checkpoint downloads from Hugging Face. Use `--checkpoint /path/to/model.pt`
 A small procedural input can check installation and execution:
 
 ```bash
-python examples/nvs_demo/make_demo.py --domain dl3dv
-python examples/nvs_render.py --domain dl3dv --manifest outputs/nvs_demo/scene.json
+python nvs/examples/make_demo.py --domain dl3dv
+python nvs/examples/render.py --domain dl3dv --manifest outputs/nvs_demo/scene.json
 ```
 
 The generated plane pattern is a synthetic smoke-test input, not a reconstruction-quality benchmark. Use calibrated photographs from one scene to evaluate visual quality.

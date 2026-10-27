@@ -1,13 +1,14 @@
-# LastKV Wan text-to-video inference
+# LastKV video generation with Wan
 
 The inference package loads the native LastKV Wan generator tensors strictly,
 including the 14B safetensors shard index. `main` selects the published EMA
 checkpoint; raw checkpoint branches remain available.
 
-Install the Wan dependencies using the repository's `wan` extra, then run:
+Install the video-generation dependencies using the repository's `videogen`
+extra, then run:
 
 ```bash
-python examples/wan_generate.py \
+python videogen/examples/generate.py \
   --model ZefanCai/LastKV-Wan-1.3B \
   --prompt "A small sailboat moving across a calm lake at sunrise." \
   --output outputs/sailboat.mp4
@@ -24,7 +25,7 @@ repository. Generator weights are downloaded from the selected LastKV revision.
 For a short execution check:
 
 ```bash
-python examples/wan_generate.py \
+python videogen/examples/generate.py \
   --prompt "A red ball rolling on a table." \
   --frames 17 --height 160 --width 160 --steps 2 \
   --output outputs/wan-smoke.mp4
@@ -46,8 +47,8 @@ BF16. The generator weights alone occupy approximately 2.84 GB / 28.58 GB in
 BF16 for 1.3B / 14B, with additional GPU memory needed for activations and caches.
 
 ```python
-from lastkv.wan import LastKVWanPipeline
-from lastkv.wan.pipeline import save_video
+from lastkv.videogen import LastKVWanPipeline
+from lastkv.videogen.pipeline import save_video
 
 pipe = LastKVWanPipeline.from_pretrained("ZefanCai/LastKV-Wan-1.3B")
 video = pipe.generate("Clouds moving above a mountain lake.")

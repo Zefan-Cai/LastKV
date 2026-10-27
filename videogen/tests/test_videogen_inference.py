@@ -4,10 +4,10 @@ import pytest
 import torch
 from safetensors.torch import save_file
 
-from lastkv.wan.cache import allocate_caches, history_kv
-from lastkv.wan.loading import load_model
-from lastkv.wan.model import AKV2541ReuseKVCausalWanModel
-from lastkv.wan.pipeline import LastKVWanPipeline, latent_frame_count
+from lastkv.videogen.cache import allocate_caches, history_kv
+from lastkv.videogen.loading import load_model
+from lastkv.videogen.model import AKV2541ReuseKVCausalWanModel
+from lastkv.videogen.pipeline import LastKVWanPipeline, latent_frame_count
 
 
 def tiny_config():
@@ -79,7 +79,7 @@ def test_shared_history_matches_native_rollout_and_saves_storage():
 
 
 def test_retained_prefix_and_shared_deep_history_are_layer_correct():
-    from lastkv.wan.cache import append_shared
+    from lastkv.videogen.cache import append_shared
 
     model = AKV2541ReuseKVCausalWanModel(**tiny_config())
     caches = allocate_caches(model, 1, 24, 12, torch.float32, "cpu")
