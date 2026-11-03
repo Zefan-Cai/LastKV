@@ -1,0 +1,118 @@
+"""Runtime-neutral contracts for RMarin FlashInfer attention backends.
+
+The package deliberately imports neither vLLM, SGLang, FlashInfer, nor torch.
+Serving-runtime adapters consume the same access plan so the recurrent cache
+semantics have one executable source of truth.
+"""
+
+from .access_plan import (
+    AttentionPass,
+    CacheRole,
+    CacheSlotAccounting,
+    LogicalKVSegment,
+    RMarinAccessPlan,
+    RMarinLayerSpec,
+    RMarinRequestState,
+    SegmentKind,
+    TokenRange,
+    TopLayerStorageContract,
+    account_cache_slots,
+    plan_batch_access,
+    plan_rmarin_access,
+)
+from .reference import (
+    IndexedReferenceCache,
+    ReferenceKVToken,
+    ResolvedHistory,
+    ResolvedKVToken,
+    SourceScale,
+    TopLayerKVWrite,
+    blend_recent_token,
+    resolve_reference_history,
+    scale_source_token,
+    sigmoid_alpha,
+)
+from .bindings import (
+    CallbackRMarinFrameworkBindings,
+    RMarinLayerResources,
+    RMarinRequestSpan,
+)
+from .composite_session import (
+    RMarinCompositeKVSession,
+    RMarinCompositeMemoryBudget,
+    RMarinExactPageTable,
+    RMarinFlashInferMaterializer,
+    RMarinKVStore,
+    RMarinLayerParameters,
+    RMarinMaterializedPass,
+    RMarinPlannedFlashInferWrapper,
+    RMarinTensorDescriptor,
+    RMarinTensorOps,
+    TorchFlashInferMaterializer,
+    TorchRMarinTensorOps,
+)
+from .flashinfer_executor import (
+    AttentionState,
+    execute_rmarin_flashinfer,
+    merge_attention_states,
+    validate_independent_caches,
+)
+from .runtime_contract import (
+    RMarinBackendContractError,
+    RMarinFrameworkBindings,
+    RMarinLayerExecution,
+    RMarinRuntimeConstraints,
+    SUPPORTED_CHUNK_SIZES,
+    require_supported_chunk_size,
+)
+
+__all__ = [
+    "AttentionPass",
+    "AttentionState",
+    "CacheRole",
+    "CacheSlotAccounting",
+    "CallbackRMarinFrameworkBindings",
+    "IndexedReferenceCache",
+    "LogicalKVSegment",
+    "RMarinAccessPlan",
+    "RMarinBackendContractError",
+    "RMarinCompositeKVSession",
+    "RMarinCompositeMemoryBudget",
+    "RMarinExactPageTable",
+    "RMarinFlashInferMaterializer",
+    "RMarinFrameworkBindings",
+    "RMarinKVStore",
+    "RMarinLayerExecution",
+    "RMarinLayerParameters",
+    "RMarinLayerSpec",
+    "RMarinLayerResources",
+    "RMarinMaterializedPass",
+    "RMarinPlannedFlashInferWrapper",
+    "RMarinRequestState",
+    "RMarinRequestSpan",
+    "RMarinRuntimeConstraints",
+    "SUPPORTED_CHUNK_SIZES",
+    "RMarinTensorDescriptor",
+    "RMarinTensorOps",
+    "ReferenceKVToken",
+    "ResolvedHistory",
+    "ResolvedKVToken",
+    "SegmentKind",
+    "SourceScale",
+    "TokenRange",
+    "TopLayerKVWrite",
+    "TopLayerStorageContract",
+    "TorchFlashInferMaterializer",
+    "TorchRMarinTensorOps",
+    "account_cache_slots",
+    "blend_recent_token",
+    "execute_rmarin_flashinfer",
+    "merge_attention_states",
+    "plan_batch_access",
+    "plan_rmarin_access",
+    "resolve_reference_history",
+    "require_supported_chunk_size",
+    "scale_source_token",
+    "sigmoid_alpha",
+    "validate_independent_caches",
+]

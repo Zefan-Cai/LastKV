@@ -26,7 +26,8 @@ LLM and NVS also support CPU inference.
 
 Each domain is self-contained in its root folder: `llm/`, `nvs/`, and
 `videogen/`. Each folder contains the implementation, a `README.md`, examples,
-and tests.
+and tests. `vllm/` adds vLLM serving for the language models and is installed
+separately.
 
 ## Language models
 
@@ -38,6 +39,19 @@ python llm/examples/generate.py --model ZefanCai/LastKV-LLM-8B-Base \
 `main` contains the 8K pretraining checkpoint at step 59,904. Select
 `--revision 256k-step-001209` for the subsequent 256K long-context checkpoint.
 See [language inference](llm/README.md) for device, dtype, and cache options.
+
+## vLLM serving
+
+`vllm/` serves the language models through vLLM's OpenAI-compatible server.
+Install vLLM 0.25.0 in a separate environment, then start a server:
+
+```bash
+pip install vllm==0.25.0
+PYTHONPATH=vllm/src python vllm/examples/serve.py \
+  --revision 256k-step-001209 --max-model-len 131072
+```
+
+See [vLLM serving](vllm/README.md) for the fast path, memory use, and numerics.
 
 ## Video generation
 
