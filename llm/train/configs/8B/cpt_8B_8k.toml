@@ -1,0 +1,101 @@
+# 8B continued pretraining at 8K context, 59,904 updates (paper Table 6).
+# Global batch is 3,584 sequences of 8,192 tokens, about 29.4M tokens per update.
+# Shard the corpus finely enough that every data-parallel rank gets an even
+# spread; file-level sharding over a handful of large files does not.
+[model]
+config = "configs/8B/lastkv_8B_reusekv.json"
+tokenizer_path = "fla-hub/transformer-1.3B-100B"
+
+[job]
+dump_folder = "exp"
+print_args = true
+
+[training]
+batch_size = 8
+seq_len = 8192
+context_len = 8192
+# batch 8 x 448 ranks = global batch 3,584 -> 29.4M tokens per update.
+gradient_accumulation_steps = 1
+steps = 59904
+# Gradient clipping is the only spike defense in this release; the step-skip
+# guard of the original run is not included.  Observed gradient norms were
+# 0.04-0.10, so 0.5 leaves almost every step untouched.
+max_norm = 0.5
+skip_nan_inf = true
+data_parallel_replicate_degree = 56
+data_parallel_shard_degree = 8
+tensor_parallel_degree = 1
+# compile off: flame's apply_compile nests _orig_mod wrappers that break DCP
+# initial-load (weights stay random) and optimizer state save (KeyError)
+compile = false
+dataset = "parquet"
+dataset_split = "train"
+data_files = "${LASTKV_DATA_FILES}"
+streaming = true
+num_workers = 1
+pin_memory = false
+persistent_workers = false
+prefetch_factor = 2
+seed = 42
+varlen = false
+# The LastKV model chunked recurrent forward requires reshard_after_forward=never
+fsdp_reshard_after_forward = "never"
+
+[optimizer]
+# CPT resume-and-decay recipe from the colleague's marin-8b runs
+# (wdlctc/delta-mhar-cpt train_cpt.py): peak lr 1.7e-3 = marin phoenix
+# plateau LR (see marin-8b retro). Known deviations from that recipe:
+# flame applies weight decay to all params (no embed/norm/bias mask)
+# and has no z-loss. The LastKV model learnable alpha blends are excluded from
+# weight decay by default (optimizer.alpha_weight_decay = false).
+name = "AdamW"
+eps = 1e-8
+lr = 1.7e-3
+beta1 = 0.9
+beta2 = 0.95
+weight_decay = 0.05
+
+[lr_scheduler]
+# No decay: a linear re-warmup, then a constant peak learning rate for the
+# rest of the run, the stable phase of a warmup-stable-decay schedule.
+# lr_min = 1.0 makes the decay branch a constant factor of 1.0.  A cooldown,
+# if wanted, is a separate anneal from any checkpoint.
+warmup_steps = 1024
+decay_type = "linear"
+lr_min = 1.0
+
+[checkpoint]
+enable_checkpoint = true
+folder = "checkpoint"
+initial_load_path = "${LASTKV_INIT_CKPT}"
+initial_load_model_weights_only = true
+interval_type = "steps"
+interval = 512
+# Bound local disk: full fp32 state is about 90 GB per save.  Copy older
+# checkpoints off the node yourself if you need to keep them.
+keep_latest_k = 2
+model_weights_only = false
+export_dtype = "float32"
+async_mode = "disabled"
+
+[profiling]
+enable_profiling = false
+save_traces_folder = "profile_trace"
+profile_freq = 512
+
+[metrics]
+log_freq = 1
+enable_wandb = true
+
+[experimental]
+context_parallel_degree = 1
+pipeline_parallel_degree = 1
+
+[float8]
+enable_fsdp_float8_all_gather = false
+precompute_float8_dynamic_scale_for_fsdp = false
+
+[activation_checkpoint]
+# LastKV checkpoints its own layer-chunks (always non-reentrant per
+# layer-chunk); flame-level AC must stay off
+mode = "none"

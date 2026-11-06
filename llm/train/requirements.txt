@@ -1,0 +1,19 @@
+# Training dependencies for llm/train.  Install these in an environment SEPARATE
+# from the inference extras: the repository's `llm` extra pins transformers
+# 4.57.6, and the trainer tracks whatever version fla and torchtitan need.
+torch>=2.8
+transformers==4.57.6
+datasets==3.4.0
+torchdata
+wandb
+tiktoken
+pyarrow
+
+# The trainer is vendored in flame/; these are its dependencies, installed from
+# pinned upstream revisions:
+#   pip install --no-use-pep517 'flash-linear-attention @ git+https://github.com/fla-org/flash-linear-attention@3c6f70d'
+#   pip install 'torchtitan @ git+https://github.com/pytorch/torchtitan.git@0b44d4c'
+#   pip install flash-attn --no-build-isolation
+#
+# The 8B families additionally need liger-kernel for the fused cross entropy:
+#   pip install liger-kernel

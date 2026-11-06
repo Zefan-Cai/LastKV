@@ -42,4 +42,4 @@ packages = ["lastkv.llm", "lastkv.nvs", "lastkv.videogen"]
 "lastkv.videogen" = "videogen/src/lastkv/videogen"
 
 [tool.pytest.ini_options]
-testpaths = ["llm/tests", "nvs/tests", "videogen/tests"]
+testpaths = ["llm/tests", "llm/train/tests", "nvs/tests", "videogen/tests"]

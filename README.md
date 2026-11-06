@@ -27,7 +27,8 @@ LLM and NVS also support CPU inference.
 Each domain is self-contained in its root folder: `llm/`, `nvs/`, and
 `videogen/`. Each folder contains the implementation, a `README.md`, examples,
 and tests. `vllm/` adds vLLM serving for the language models and is installed
-separately.
+separately. `llm/train/` holds the training code for the 124M, 760M and 8B
+language models and is installed separately from the inference extras.
 
 ## Language models
 
@@ -39,6 +40,18 @@ python llm/examples/generate.py --model ZefanCai/LastKV-LLM-8B-Base \
 `main` contains the 8K pretraining checkpoint at step 59,904. Select
 `--revision 256k-step-001209` for the subsequent 256K long-context checkpoint.
 See [language inference](llm/README.md) for device, dtype, and cache options.
+
+## Language model training
+
+```bash
+export LASTKV_DATA_FILES='/data/lastkv/ldc-arrow/data-*.arrow'
+ARM=perlayerkv NGPU=8 llm/train/scripts/train_124m.sh
+```
+
+`llm/train/` trains the 124M, 760M and 8B language models with one vendored
+trainer. See [language training](llm/train/README.md) for the mapping from each
+paper result to its config and command, the corpus preparation step, and the
+separate dependency set.
 
 ## vLLM serving
 

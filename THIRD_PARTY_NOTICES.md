@@ -16,6 +16,15 @@ Its license is reproduced in [LICENSES/flame-LICENSE](LICENSES/flame-LICENSE).
 The release imports Llama configuration, rotary embeddings, and related utilities
 from Hugging Face Transformers, which is distributed under Apache-2.0.
 
+`llm/train/flame/` vendors flame itself, under the same MIT license, as the
+trainer for all three model scales. `llm/train/PROVENANCE.md` records the
+upstream commit it descends from, every change relative to it, and the trainer
+features of the research code that the release leaves out. The trainer depends
+on [flash-linear-attention](https://github.com/fla-org/flash-linear-attention)
+(MIT) and [torchtitan](https://github.com/pytorch/torchtitan) (BSD-3-Clause) as
+installed packages rather than vendored code; `llm/train/requirements.txt` pins
+the revisions used.
+
 ## Wan video model
 
 The Wan-derived files in `videogen/src/lastkv/videogen/` retain Apache-2.0:
