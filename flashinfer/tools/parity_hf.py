@@ -101,12 +101,13 @@ def main() -> None:
     ref = None
     if args.ref_cache and os.path.exists(args.ref_cache):
         ref = torch.load(args.ref_cache)
-        if ref.get("ids") != ids:
-            print("ref cache ids differ; recomputing", file=sys.stderr)
+        if ref.get("ids") != ids or ref.get("model") != os.path.abspath(args.model):
+            print("ref cache ids/model differ; recomputing", file=sys.stderr)
             ref = None
     if ref is None:
         ref = hf_reference(args.model, cfg.family, ids, args.greedy)
         ref["ids"] = ids
+        ref["model"] = os.path.abspath(args.model)
         if args.ref_cache:
             torch.save(ref, args.ref_cache)
 

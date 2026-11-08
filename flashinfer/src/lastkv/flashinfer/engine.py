@@ -173,7 +173,12 @@ class Engine:
         self.cur = [0] * batch  # tokens in the current chunk (lastkv)
 
     def kv_bytes_in_use(self) -> int:
-        """Physical KV bytes holding live state (not pool capacity)."""
+        """Physical KV bytes of live state (not pool capacity).
+
+        For LastKV this counts the shared source of completed chunks plus the
+        whole two-chunk ring of every active sequence, matching the paper's
+        accounting (shared history + retained per-layer working buffers).
+        """
         cfg = self.config
         tok = cfg.kv_bytes_per_token_per_layer
         if self.family == "lastkv":
@@ -326,7 +331,8 @@ class Engine:
             "logprob": logprob.cpu(),
             "argmax": argmax.cpu(),
             "prefill_tokens": split,
-            "path": ["prefill"] * (split - 1) + ["decode"] * (n - split),
+            # position i is predicted by the hidden row of token i; rows < split come from the prefill pass
+            "path": ["prefill"] * min(split, n - 1) + ["decode"] * max(0, n - 1 - split),
         }
 
     # ------------------------------------------------------------------

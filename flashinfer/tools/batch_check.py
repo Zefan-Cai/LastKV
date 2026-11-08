@@ -30,7 +30,8 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--model", required=True)
     p.add_argument("--prompt-json", required=True)
-    p.add_argument("--lens", default="2500,3100")
+    p.add_argument("--lens", default="900,2500,3100",
+                   help="prompt lengths; the default mixes a row without older history (no source pass) with rows that have it")
     p.add_argument("--new", type=int, default=48)
     p.add_argument("--min-match", type=int, default=24)
     p.add_argument("--page-size", type=int, default=16)
@@ -42,12 +43,12 @@ def main() -> None:
     tok = Tokenizer.from_file(os.path.join(args.model, "tokenizer.json"))
     ids = tok.encode(json.load(open(args.prompt_json))["prompt"], add_special_tokens=False).ids
     lens = [int(x) for x in args.lens.split(",")]
+    eng = Engine(args.model, max_batch_size=len(lens), max_seq_len=max(lens) + args.new + 8, page_size=args.page_size)
     prompts = []
     for i, n in enumerate(lens):
         pr = ids[:n]
-        pr[0] = (pr[0] + i) % 100000  # unique first token
+        pr[0] = (pr[0] + i) % eng.config.vocab_size  # unique first token
         prompts.append(pr)
-    eng = Engine(args.model, max_batch_size=len(prompts), max_seq_len=max(lens) + args.new + 8, page_size=args.page_size)
     single = [eng.generate([pr], max_new_tokens=args.new, temperature=0.0)[0].token_ids for pr in prompts]
     joint = [o.token_ids for o in eng.generate(prompts, max_new_tokens=args.new, temperature=0.0)]
     ok = True
