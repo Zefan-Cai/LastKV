@@ -1,0 +1,11 @@
+# Standalone FlashInfer engine — pinned stack (validated on H100 SM90, driver CUDA 12.8).
+# flashinfer-python 0.6.12 requires torch<2.11, so torch 2.10.0 (cu128 wheels) is the
+# newest torch this stack can hold. transformers is only needed by tools/parity_hf.py
+# (HF reference: lastkv.llm needs 4.57.6 and huggingface-hub<1).
+torch==2.10.0
+flashinfer-python==0.6.12
+flashinfer-cubin==0.6.12
+safetensors
+tokenizers
+transformers==4.57.6
+huggingface-hub<1

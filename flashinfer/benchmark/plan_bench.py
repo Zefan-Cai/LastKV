@@ -165,8 +165,8 @@ def main() -> None:
         k = v = q = None
         engine_w = dev_w = run_w = None
         try:
-            k = torch.zeros((total_pages, page, args.kv_heads, args.head_dim),
-                            dtype=dtype, device=device)
+            shape = (total_pages, page, args.kv_heads, args.head_dim)
+            k = torch.zeros(shape, dtype=dtype, device=device)
             v = torch.zeros_like(k)
             q = torch.randn((batch, args.q_heads, args.head_dim), dtype=dtype, device=device) * 0.1
             indptr_cpu, indices_dev, last_cpu, _ = make_inputs(
@@ -175,15 +175,11 @@ def main() -> None:
             indptr_dev = indptr_cpu.to(device)
             last_dev = last_cpu.to(device)
 
-            engine_w = BatchDecodeWithPagedKVCacheWrapper(
-                torch.zeros(ws_bytes, dtype=torch.uint8, device=device), "NHD", use_tensor_cores=True
-            )
-            dev_w = BatchDecodeWithPagedKVCacheWrapper(
-                torch.zeros(ws_bytes, dtype=torch.uint8, device=device), "NHD", use_tensor_cores=True
-            )
-            run_w = BatchDecodeWithPagedKVCacheWrapper(
-                torch.zeros(ws_bytes, dtype=torch.uint8, device=device), "NHD", use_tensor_cores=True
-            )
+            def new_wrapper() -> BatchDecodeWithPagedKVCacheWrapper:
+                ws = torch.zeros(ws_bytes, dtype=torch.uint8, device=device)
+                return BatchDecodeWithPagedKVCacheWrapper(ws, "NHD", use_tensor_cores=True)
+
+            engine_w, dev_w, run_w = new_wrapper(), new_wrapper(), new_wrapper()
 
             # (a) engine convention: CPU indptr/last, device indices.
             plan_engine = lambda: engine_w.plan(indptr_cpu, indices_dev, last_cpu, *base_args, **kw)
@@ -226,6 +222,7 @@ def main() -> None:
 
             entry = {
                 "batch": batch,
+                "status": "ok",
                 "pages_per_seq": pages_per_seq,
                 "kv_gib": kv_bytes / 2 ** 30,
                 "plan_cpu_inputs_idle": idle_engine,
