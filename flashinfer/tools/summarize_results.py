@@ -53,6 +53,8 @@ def prefill_section(d: str) -> list[str]:
             continue
         for x in r["results"]:
             fam = "lastkv" if "lastkv" in os.path.basename(path) else "transformer"
+            if fam == "transformer" and not r.get("tf_prefill_chunk"):
+                fam = "transformer (serial full-prompt)"
             rows.append((fam, r["batch"], x))
     if rows:
         out += ["### Simultaneous prefill of N prompts (static batch, chunk-synchronous for LastKV)", "",

@@ -37,7 +37,10 @@ def main() -> None:
         text = json.load(open(args.prompt_json))["prompt"]
         ids = tok.encode(text, add_special_tokens=False).ids[: args.tokens]
     else:
-        ids = tok.encode("The key to understanding the universe is", add_special_tokens=False).ids
+        import random
+
+        rng = random.Random(1234)
+        ids = [rng.randrange(120000) for _ in range(args.tokens)]  # synthetic, seeded
     max_seq_len = args.max_seq_len or (len(ids) + args.new + 8)
     t0 = time.perf_counter()
     eng = Engine(args.model, max_batch_size=args.batch, max_seq_len=max_seq_len, page_size=args.page_size, tf_prefill_chunk=args.tf_prefill_chunk)
@@ -46,6 +49,8 @@ def main() -> None:
     prompts = [list(ids) for _ in range(args.batch)]
     for i in range(1, args.batch):
         prompts[i][0] = (prompts[i][0] + i) % eng.config.vocab_size  # unique first token
+    # Discarded warmup (JIT module load, first plans, chunk commits) so the printed timings are steady-state.
+    eng.generate([p[: min(len(p), 2 * getattr(eng, "chunk", 1024) + 64)] for p in prompts], max_new_tokens=4, temperature=0.0)
     outs = eng.generate(prompts, max_new_tokens=args.new, temperature=0.0, record_step_times=True)
     s = eng.stats
     steps = max(1, int(s["decode_steps"]))

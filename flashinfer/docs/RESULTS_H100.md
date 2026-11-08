@@ -18,8 +18,8 @@ Standalone eager engine, one H100 80GB per run, bf16, page 16; LastKV = marin SF
 |---|---|---|---|---|---|---|---|
 | lastkv | 4 | 126,976 | 43.54 | 11,666 | 2,916 | 19.7 | 2.9 |
 | lastkv | 8 | 126,976 | 87.76 | 11,575 | 1,447 | 23.1 | 5.9 |
-| transformer | 4 | 65,536 | 12.94 | 20,254 | 5,063 | 55.8 | 32.0 |
-| transformer | 2 | 126,976 | 19.01 | 13,358 | 6,679 | 61.9 | 31.0 |
+| transformer (serial full-prompt) | 4 | 65,536 | 12.94 | 20,254 | 5,063 | 55.8 | 32.0 |
+| transformer (serial full-prompt) | 2 | 126,976 | 19.01 | 13,358 | 6,679 | 61.9 | 31.0 |
 
 ## Steady-state decode versus resident sequences N (fixed context, same engine)
 

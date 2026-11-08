@@ -218,6 +218,8 @@ class Engine:
         lens = [len(p) for p in prompts]
         if not 0 < batch <= self.max_batch_size:
             raise ValueError(f"batch {batch} not in [1, {self.max_batch_size}]")
+        if max_new_tokens < 1:
+            raise ValueError(f"max_new_tokens must be >= 1, got {max_new_tokens}")
         for i, n in enumerate(lens):
             if n < 1 or n + max_new_tokens > self.max_seq_len:
                 raise ValueError(f"prompt {i}: len {n} + {max_new_tokens} exceeds max_seq_len {self.max_seq_len}")

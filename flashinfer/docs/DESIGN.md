@@ -118,6 +118,17 @@ than the recurrence; the vLLM backend's batch-invariant reference path reaches
 0.004–0.007 on the same prompts. HF's own prefill-vs-decode disagreement is of
 the same order, so gates are on the mean, never the max.
 
+Greedy outputs are not batch-invariant: the GEMM kernel changes with the batch
+size, so a near-tie can flip. `tools/batch_check.py` compares single-request
+and joint greedy continuations; every two-row combination of 1,000 / 2,024 /
+2,500 / 3,048-token prompts (rows with and without older history, decode-time
+commits of different chunks in one step) matched 48/48, while a batch of four
+identical 2,024-token rows diverged at token 18 and 36 in two rows — the
+Llama control shows the same effect at batch 2. A bookkeeping bug diverges
+within the first few tokens.
+
+Benchmarks and capacity numbers are in [RESULTS_H100.md](RESULTS_H100.md).
+
 ## 7. Known limits
 
 * Eager: ~13–20 ms of host work per decode step dominates at batch 1 (R-KV's
