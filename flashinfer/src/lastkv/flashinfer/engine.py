@@ -143,7 +143,26 @@ class Engine:
 
         self._kw = dict(q_data_type=dtype, kv_data_type=dtype)
         self.stats: dict[str, float] = {}
+        # FlashInfer plan() stages its scheduler metadata through ONE pinned
+        # host buffer per wrapper and copies it to the device asynchronously
+        # (stream-ordered after the previously launched kernels). A second
+        # plan() issued while that copy is still pending overwrites the pinned
+        # buffer and corrupts the first plan. generate() is protected by the
+        # per-step sampling sync; score()/prefill chunk loops are not, so every
+        # step records an event after its plan()s and waits on it before the
+        # next step plans. The host still runs one step ahead of the GPU.
+        self._plan_event: torch.cuda.Event | None = None
         self._reset_state(0)
+
+    def _before_plan(self) -> None:
+        if self._plan_event is not None:
+            self._plan_event.synchronize()
+
+    def _after_plan(self) -> None:
+        if self.device.type == "cuda":
+            ev = torch.cuda.Event()
+            ev.record()
+            self._plan_event = ev
 
     # ------------------------------------------------------------------
     # bookkeeping
@@ -363,7 +382,9 @@ class Engine:
             ids, positions = self._stage(list(prompt), list(range(n)))
             self._write_slots = self._tf_write_slots([r], [0], [n])
             indptr = torch.tensor([0, n], dtype=torch.int32)
+            self._before_plan()
             self._ragged_prefill.plan(indptr, indptr, cfg.num_q_heads, cfg.num_kv_heads, cfg.head_dim, causal=True, **self._kw)
+            self._after_plan()
 
             def run(layer, q, _k=None, _v=None):
                 return self._ragged_prefill.run(q, self._cur_k, self._cur_v)
@@ -413,10 +434,12 @@ class Engine:
             kv_indptr = torch.tensor([0, *accumulate(pages)], dtype=torch.int32)
             kv_indices = self._cat_pages(self._kv_arange, [(r * self.seq_pages, r * self.seq_pages + p) for r, p in zip(active, pages)])
             last = torch.tensor([(n * C + c - 1) % self.page + 1 for c in counts], dtype=torch.int32)
+            self._before_plan()
             self._paged_prefill_local.plan(
                 qo_indptr, kv_indptr, kv_indices, last, cfg.num_q_heads, cfg.num_kv_heads, cfg.head_dim, self.page,
                 causal=True, **self._kw,
             )
+            self._after_plan()
             attention = self._tf_attention_factory(
                 lambda layer, q: self._paged_prefill_local.run(q, (self.kv_k[layer], self.kv_v[layer]))
             )
@@ -440,7 +463,9 @@ class Engine:
         kv_indptr = torch.tensor([0, *accumulate(pages)], dtype=torch.int32)
         kv_indices = self._cat_pages(self._kv_arange, [(r * self.seq_pages, r * self.seq_pages + p) for r, p in zip(active, pages)])
         last = torch.tensor([p % self.page + 1 for p in positions], dtype=torch.int32)
+        self._before_plan()
         self._decode_local.plan(kv_indptr, kv_indices, last, cfg.num_q_heads, cfg.num_kv_heads, cfg.head_dim, self.page, **self._kw)
+        self._after_plan()
         attention = self._tf_attention_factory(lambda layer, q: self._decode_local.run(q, (self.kv_k[layer], self.kv_v[layer])))
         hidden = self.model(ids_t, pos_t, attention)
         for r in active:
@@ -592,8 +617,10 @@ class Engine:
             ids_t, pos_t = self._stage(ids, positions)
             self._write_slots = self._ring_slots(active, [0] * len(active), counts)
             n_done = [self.n_done[r] for r in active]  # == n for every active row
+            self._before_plan()
             self._plan_local(True, active, n_done, counts, counts)
             has_src = self._plan_source(True, active, n_done, counts)
+            self._after_plan()
             hidden = model(ids_t, pos_t, self._lastkv_attention_factory(True, has_src))
             if on_logits is not None:
                 self._emit_logits(hidden, active, [n * C] * len(active), counts, on_logits)
@@ -621,8 +648,10 @@ class Engine:
         cur_after = [self.cur[r] + 1 for r in active]
         self._write_slots = self._ring_slots(active, [self.cur[r] for r in active], [1] * len(active))
         n_done = [self.n_done[r] for r in active]
+        self._before_plan()
         self._plan_local(False, active, n_done, cur_after, None)
         has_src = self._plan_source(False, active, n_done, None)
+        self._after_plan()
         hidden = self.model(ids_t, pos_t, self._lastkv_attention_factory(False, has_src))
         logits = self.model.compute_logits(hidden)
         commit_rows, commit_idx = [], []
