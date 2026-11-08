@@ -1,19 +1,11 @@
 """Host cost of FlashInfer ``plan()`` in this engine's decode configuration.
 
-Builds a ``BatchDecodeWithPagedKVCacheWrapper`` (NHD, tensor cores, 256 MB
-workspace) and times, for each batch N and context length:
-
-  (a) plan() with indptr/last_page_len on CPU and indices on device, which is
-      the engine's convention,
-  (b) plan() with every input on device (the vLLM-style call that can force a
-      D2H sync),
-  (c) both variants again while a background matmul loop keeps the GPU busy,
-      reproducing the "blocking for several ms when the GPU is busy" report,
-  (d) one plan + run() of 32 layers over a dummy paged KV cache, i.e. the full
-      decode step, to show host-bound vs GPU-bound behaviour.
-
-No model weights are loaded. Prints a table and exactly one JSON object as the
-last stdout line.
+Times BatchDecodeWithPagedKVCacheWrapper (NHD, tensor cores, 256 MB workspace)
+per batch N at one context length: (a) CPU indptr/last_page_len + device
+indices (the engine's convention), (b) all inputs on device (the vLLM-style
+call that can force a D2H sync), (c) both again with a background matmul loop
+keeping the GPU busy, and (d) one plan + 32-layer run() over a dummy paged KV
+cache. No weights are loaded. Table then one JSON object as the last line.
 
     python benchmark/plan_bench.py --batches 1,4,8,16,32 --len 126976
 """
@@ -37,8 +29,7 @@ def cdiv(a: int, b: int) -> int:
 
 def percentile(samples: list[float], q: float) -> float:
     ordered = sorted(samples)
-    idx = min(len(ordered) - 1, max(0, int(math.ceil(q * len(ordered))) - 1))
-    return ordered[idx]
+    return ordered[min(len(ordered) - 1, max(0, int(math.ceil(q * len(ordered))) - 1))]
 
 
 def time_calls(fn, reps: int, warmup: int) -> dict:
@@ -52,23 +43,17 @@ def time_calls(fn, reps: int, warmup: int) -> dict:
         fn()
         samples.append(1000.0 * (time.perf_counter() - t0))
     torch.cuda.synchronize()
-    return {
-        "median_ms": statistics.median(samples),
-        "p90_ms": percentile(samples, 0.90),
-    }
+    return {"median_ms": statistics.median(samples), "p90_ms": percentile(samples, 0.90)}
 
 
 class BusyGPU:
-    """Keep the GPU loaded with a bounded queue of matmuls on a side stream.
+    """Bounded-queue matmul load on a side stream.
 
-    Queue depth is capped so a default-stream sync waits for a few kernels
-    (a few ms), like a server whose GPU is busy with other requests, instead of
-    waiting for an unbounded backlog.
+    Depth is capped so a default-stream sync waits for a few ms, like a server
+    whose GPU is busy with other requests, not for an unbounded backlog.
     """
 
     def __init__(self, size: int = 8192, depth: int = 4) -> None:
-        self.size = size
-        self.depth = depth
         self._stop = threading.Event()
         self._started = threading.Event()
         self.stream = torch.cuda.Stream()
@@ -76,13 +61,14 @@ class BusyGPU:
         self.a = torch.randn(size, size, device=dev, dtype=torch.bfloat16) * 0.01
         self.b = torch.randn(size, size, device=dev, dtype=torch.bfloat16) * 0.01
         self.out = torch.empty(size, size, device=dev, dtype=torch.bfloat16)
+        self._depth = depth
         self._events: collections.deque = collections.deque()
         self._thread = threading.Thread(target=self._loop, daemon=True)
 
     def _loop(self) -> None:
         with torch.cuda.stream(self.stream):
             while not self._stop.is_set():
-                if len(self._events) >= self.depth:
+                if len(self._events) >= self._depth:
                     if not self._events[0].query():
                         time.sleep(0.0005)
                         continue
@@ -108,9 +94,7 @@ class BusyGPU:
 def make_inputs(batch: int, ctx_len: int, page_size: int, device, total_pages: int):
     pages_per_seq = cdiv(ctx_len, page_size)
     last_len = ctx_len - (pages_per_seq - 1) * page_size
-    indptr = torch.tensor(
-        [r * pages_per_seq for r in range(batch + 1)], dtype=torch.int32
-    )
+    indptr = torch.tensor([r * pages_per_seq for r in range(batch + 1)], dtype=torch.int32)
     last = torch.full((batch,), last_len, dtype=torch.int32)
     indices = torch.arange(total_pages, dtype=torch.int32, device=device)
     return indptr, indices, last, pages_per_seq
@@ -150,7 +134,6 @@ def main() -> None:
     base_args = (args.q_heads, args.kv_heads, args.head_dim, page)
     kw = {"q_data_type": dtype, "kv_data_type": dtype}
     version = getattr(flashinfer, "__version__", "unknown")
-
     print(
         f"gpu={torch.cuda.get_device_name(0)} flashinfer={version} len={args.len} "
         f"page={page} heads={args.q_heads}/{args.kv_heads}x{args.head_dim} "
@@ -250,17 +233,11 @@ def main() -> None:
     summary = {
         "script": "plan_bench",
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
-        "gpu": torch.cuda.get_device_name(0),
-        "flashinfer": version,
-        "len": args.len,
-        "page_size": page,
-        "q_heads": args.q_heads,
-        "kv_heads": args.kv_heads,
-        "head_dim": args.head_dim,
-        "layers": args.layers,
-        "workspace_mb": args.workspace_mb,
-        "reps": args.reps,
-        "warmup": args.warmup,
+        "gpu": torch.cuda.get_device_name(0), "flashinfer": version,
+        "len": args.len, "page_size": page,
+        "q_heads": args.q_heads, "kv_heads": args.kv_heads, "head_dim": args.head_dim,
+        "layers": args.layers, "workspace_mb": args.workspace_mb,
+        "reps": args.reps, "warmup": args.warmup,
         "busy": {"matmul_size": args.busy_size, "queue_depth": args.busy_depth},
         "results": results,
     }
