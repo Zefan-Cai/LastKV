@@ -23,6 +23,51 @@ Standalone eager engine, one H100 80GB per run, bf16, page 16; LastKV = marin SF
 
 ## Steady-state decode versus resident sequences N (fixed context, same engine)
 
+### context 4,096 tokens
+
+| family | N | step ms (median) | aggregate tok/s | per-seq tok/s | KV GiB | pool GiB | peak GiB |
+|---|---|---|---|---|---|---|---|
+| transformer | 1 | 7.86 | 127.2 | 127.24 | 0.51 | 0.5 | 17.2 |
+| transformer | 4 | 8.90 | 449.6 | 112.41 | 2.03 | 2.0 | 20.0 |
+| transformer | 16 | 11.25 | 1422.0 | 88.88 | 8.12 | 8.2 | 31.2 |
+| transformer | 32 | 14.05 | 2277.3 | 71.17 | 16.25 | 16.3 | 46.1 |
+| transformer | 64 | 20.02 | 3197.6 | 49.96 | 32.49 | 32.6 | 49.4 |
+| transformer | 96 | 26.20 | 3664.6 | 38.17 | 48.74 | 48.9 | 65.7 |
+| transformer | 112 | 29.31 | 3821.0 | 34.12 | 56.86 | 57.1 | 73.9 |
+| lastkv | 1 | 12.28 | 81.4 | 81.44 | 0.27 | 0.3 | 16.7 |
+| lastkv | 4 | 13.41 | 298.3 | 74.57 | 1.06 | 1.1 | 17.8 |
+| lastkv | 16 | 13.60 | 1176.7 | 73.54 | 4.25 | 4.3 | 22.4 |
+| lastkv | 32 | 15.03 | 2129.1 | 66.53 | 8.50 | 8.5 | 28.4 |
+| lastkv | 64 | 21.23 | 3014.4 | 47.10 | 17.00 | 17.0 | 40.6 |
+| lastkv | 96 | 27.52 | 3488.3 | 36.34 | 25.50 | 25.5 | 52.7 |
+| lastkv | 128 | 33.80 | 3786.6 | 29.58 | 34.00 | 34.0 | 64.9 |
+| lastkv | 192 | OOM | | | | | |
+
+- fit lastkv (decode-lastkv-4096.json): step_ms = 11.34 + 0.169 * N (r2 0.983, n=7); ceiling 1000/b = 5932 tok/s
+- fit transformer (decode-tf-4096-full.json): step_ms = 7.62 + 0.194 * N (r2 1.000, n=3); ceiling 1000/b = 5165 tok/s
+- fit transformer (decode-tf-4096.json): step_ms = 7.93 + 0.195 * N (r2 0.993, n=4); ceiling 1000/b = 5134 tok/s
+
+### context 8,192 tokens
+
+| family | N | step ms (median) | aggregate tok/s | per-seq tok/s | KV GiB | pool GiB | peak GiB |
+|---|---|---|---|---|---|---|---|
+| transformer | 1 | 8.02 | 124.7 | 124.74 | 1.01 | 1.0 | 17.7 |
+| transformer | 4 | 9.63 | 415.2 | 103.80 | 4.03 | 4.0 | 22.1 |
+| transformer | 16 | 13.99 | 1143.5 | 71.47 | 16.12 | 16.2 | 39.7 |
+| transformer | 32 | 19.66 | 1627.9 | 50.87 | 32.25 | 32.3 | 63.1 |
+| transformer | 48 | 25.85 | 1856.6 | 38.68 | 48.37 | 48.5 | 65.7 |
+| transformer | 56 | 28.67 | 1953.3 | 34.88 | 56.43 | 56.5 | 73.8 |
+| lastkv | 1 | 11.79 | 84.8 | 84.84 | 0.28 | 0.3 | 16.7 |
+| lastkv | 4 | 12.73 | 314.2 | 78.55 | 1.12 | 1.1 | 17.9 |
+| lastkv | 16 | 14.98 | 1067.9 | 66.74 | 4.50 | 4.5 | 22.6 |
+| lastkv | 32 | 20.54 | 1557.7 | 48.68 | 9.00 | 9.0 | 28.9 |
+| lastkv | 64 | 32.90 | 1945.3 | 30.40 | 18.00 | 18.0 | 41.6 |
+| lastkv | 128 | 56.21 | 2277.3 | 17.79 | 36.00 | 36.0 | 66.9 |
+
+- fit lastkv (decode-lastkv-8192.json): step_ms = 10.40 + 0.354 * N (r2 0.997, n=6); ceiling 1000/b = 2824 tok/s
+- fit transformer (decode-tf-8192-full.json): step_ms = 8.96 + 0.352 * N (r2 1.000, n=2); ceiling 1000/b = 2842 tok/s
+- fit transformer (decode-tf-8192.json): step_ms = 7.93 + 0.369 * N (r2 0.998, n=4); ceiling 1000/b = 2707 tok/s
+
 ### context 32,768 tokens
 
 | family | N | step ms (median) | aggregate tok/s | per-seq tok/s | KV GiB | pool GiB | peak GiB |
